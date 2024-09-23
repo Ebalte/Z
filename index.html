@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мобильный сайт заметок</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Стили для модального окна */
+        .modal {
+            display: none; /* Скрыто по умолчанию */
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; /* Позволяет скроллить, если это необходимо */
+            background-color: rgba(0, 0, 0, 0.8); /* Полупрозрачный черный фон */
+        }
+
+        .modal-content {
+            background-color: #333; /* Темный фон для модального окна */
+            color: white; /* Белый текст */
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px; /* Максимальная ширина модального окна */
+            border-radius: 8px; /* Скругленные углы */
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: white; /* Цвет при наведении на крестик */
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* Стили для заметок */
+        .note-item {
+            border: 1px solid #000000;
+            padding: 10px;
+            margin: 5px;
+            background-color: #000000;
+        }
+
+        /* Стили для сообщения "Нет заметок" */
+        #no-notes {
+            color: lightgray;
+            font-size: 24px;
+            text-align: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Центрирование по вертикали и горизонтали */
+            display: none; /* Скрыто по умолчанию */
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Мои Заметки</h1>
+    <button id="add-note" onclick="location.href='create-note.html'" style="color: #b22222; font-size: 18px; float: right;">➕</button>
+    <div id="note-list"></div>
+    <div id="no-notes" style="display: block;">Нет заметок.</div>
+
+    <button id="delete-selected" style="display: none;" onclick="showDeleteConfirmation()">Удалить выбранные</button>
+
+    <!-- Модальное окно -->
+    <div id="confirmation-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <p>Вы уверены, что хотите удалить выбранные заметки?</p>
+            <button class="confirm" 
+                    style="background-color: #b22222; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer;" 
+                    onclick="deleteSelectedNotes()">Да, удалить</button>
+            <button class="confirm" 
+                    style="background-color: #ccc; color: black; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer;" 
+                    onclick="closeModal()">Отменить</button>
+        </div>
+    </div>
+
+    <script>
+        let notes = JSON.parse(localStorage.getItem('notes')) || [];
+
+        displayNotes();
+
+        function displayNotes() {
+            const noteList = document.getElementById('note-list');
+            noteList.innerHTML = '';
+
+            if (notes.length === 0) {
+                document.getElementById('no-notes').style.display = 'block';
+                document.getElementById('delete-selected').style.display = 'none';
+            } else {
+                document.getElementById('no-notes').style.display = 'none';
+                notes.forEach((note, index) => {
+                    const noteDiv = document.createElement('div');
+                    noteDiv.className = 'note-item';
+                    noteDiv.innerHTML = `
+                        <input type="checkbox" onchange="toggleSelect(${index})" ${note.selected ? 'checked' : ''}>
+                        <div class="note-header" onclick="openNote(${index})">
+                            <h3 class="note-title">${note.title}</h3>
+                        </div>
+                    `;
+                    noteList.appendChild(noteDiv);
+                });
+            }
+
+            const deleteButton = document.getElementById('delete-selected');
+            deleteButton.style.display = notes.some(note => note.selected) ? 'block' : 'none';
+        }
+
+        function openNote(index) {
+            const note = notes[index];
+            const noteDetail = `
+                <h2>${note.title}</h2>
+                <div class="note-content">${note.content}</div>
+                <button onclick="editNote(${index})">Редактировать</button>
+                <button onclick="goBack()">Назад</button>
+            `;
+            document.body.innerHTML = noteDetail; 
+        }
+
+        function editNote(index) {
+            localStorage.setItem('editingIndex', index);
+            location.href = 'create-note.html'; 
+        }
+
+        function goBack() {
+            location.reload(); 
+        }
+
+        function toggleSelect(index) {
+            if (index >= 0 && index < notes.length) {
+                notes[index].selected = !notes[index].selected;
+                localStorage.setItem('notes', JSON.stringify(notes));
+                displayNotes();
+            }
+        }
+
+        function showDeleteConfirmation() {
+            const modal = document.getElementById("confirmation-modal");
+            modal.style.display = "block"; // Показываем модальное окно
+        }
+
+        function closeModal() {
+            const modal = document.getElementById("confirmation-modal");
+            modal.style.display = "none"; // Скрываем модальное окно
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById("confirmation-modal");
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        function deleteSelectedNotes() {
+            notes = notes.filter(note => !note.selected);
+            localStorage.setItem('notes', JSON.stringify(notes)); 
+            displayNotes();
+            closeModal();
+        }
+    </script>
+</body>
+
+</html>
