@@ -19,7 +19,7 @@
     <form id="note-form" onsubmit="saveNote(); return false;">
         <input type="text" id="note-title" placeholder="Название заметки" required>
         <div id="note-content" contenteditable="true" onkeyup="updateResult()" required></div>
-        <input type="file" id="image-input" accept="image/*" onchange="addImageToText(this)">
+        <input type="file" id="image-input" accept="image/*" capture="environment" onchange="addImageToText(this)">
         <button type="submit">Сохранить Заметку</button>
     </form>
     <button onclick="location.href='index.html'">Назад к заметкам</button>
@@ -53,7 +53,7 @@
             const content = document.getElementById('note-content').innerHTML;
             const lastLine = content.split('<br>').pop().trim().replace(/<[^>]*>/g, ''); // Удаляем HTML теги и получаем последнюю строку
             
-            // Проверяем, заканчивается ли последняя строка на '='
+            // Удаляем пробелы в конце
             if (lastLine.endsWith('=')) {
                 const expression = lastLine.slice(0, -1).trim();
                 try {
@@ -62,7 +62,7 @@
                     document.getElementById('note-content').innerHTML = newContent;
                     placeCaretAtEnd();
                 } catch (error) {
-                    // Игнорируем ошибку
+                    // Игнорируем ошибку, если выражение неверно
                 }
             }
         }
@@ -80,5 +80,3 @@
     </script>
 </body>
 </html>
-
-
