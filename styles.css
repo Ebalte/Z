@@ -58,8 +58,8 @@ form {
 
 input[type="text"],
 textarea {
-    width: calc(100% - 20px);
-    margin: 10px;
+    width: calc(100% - 20px); /* Учитываем паддинги */
+    margin: 10px 0; /* Убираем правый и левый отступ для единообразия */
     padding: 10px;
     border: 1px solid #444;
     border-radius: 5px;
