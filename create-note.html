@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создание заметки</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        #note-content {
+            border: 1px solid #ccc; 
+            padding: 10px; 
+            min-height: 100px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Создание заметки</h1>
+    <form id="note-form" onsubmit="saveNote(); return false;">
+        <input type="text" id="note-title" placeholder="Название заметки" required>
+        <div id="note-content" contenteditable="true" onkeyup="updateResult()" required></div>
+        <input type="file" id="image-input" accept="image/*" onchange="addImageToText(this)">
+        <button type="submit">Сохранить Заметку</button>
+    </form>
+    <button onclick="location.href='index.html'">Назад к заметкам</button>
+
+    <script>
+        function addImageToText(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const imgTag = `<img src="${e.target.result}" style="max-width: 100%;" />`;
+                    const noteContent = document.getElementById('note-content');
+                    noteContent.innerHTML += imgTag; // Добавляем изображение в контент
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveNote() {
+            const title = document.getElementById('note-title').value;
+            const content = document.getElementById('note-content').innerHTML;
+
+            const notes = JSON.parse(localStorage.getItem('notes')) || [];
+            notes.push({ title: title, content: content });
+            localStorage.setItem('notes', JSON.stringify(notes));
+
+            alert('Заметка сохранена!'); // Подтверждение о сохранении
+        }
+
+        function updateResult() {
+            const content = document.getElementById('note-content').innerHTML;
+            const lastLine = content.split('<br>').pop().trim().replace(/<[^>]*>/g, ''); // Удаляем HTML теги и получаем последнюю строку
+            
+            // Проверяем, заканчивается ли последняя строка на '='
+            if (lastLine.endsWith('=')) {
+                const expression = lastLine.slice(0, -1).trim();
+                try {
+                    const result = eval(expression);
+                    const newContent = content.slice(0, -lastLine.length) + expression + ' = ' + result + '<br>';
+                    document.getElementById('note-content').innerHTML = newContent;
+                    placeCaretAtEnd();
+                } catch (error) {
+                    // Игнорируем ошибку
+                }
+            }
+        }
+
+        function placeCaretAtEnd() {
+            const noteContent = document.getElementById('note-content');
+            noteContent.focus();
+            const range = document.createRange();
+            range.selectNodeContents(noteContent);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    </script>
+</body>
+</html>
+
+

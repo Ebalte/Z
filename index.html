@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мобильный сайт заметок</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <h1>Мои Заметки</h1>
+    <button id="add-note" onclick="location.href='create-note.html'" style="color: #b22222; font-size: 18px; float: right;">➕</button>
+    <div id="note-list"></div>
+    <div id="no-notes" style="display: block; color: lightgray; font-size: 24px; text-align: center;">Нет заметок.</div>
+
+    <button id="delete-selected" style="display: none;" onclick="deleteSelectedNotes()">Удалить выбранные</button>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
