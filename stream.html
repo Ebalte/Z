@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Лента Заметок</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background-color: #000; /* Черный фон по умолчанию */
+            color: #fff; /* Белый текст */
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .search-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .search-container input {
+            padding: 8px; /* Уменьшено значение */
+            width: 80%; /* Ширина поля поиска */
+            max-width: 400px; /* Максимальная ширина */
+            border: 1px solid #ddd; /* Граница */
+            border-radius: 5px; /* Скругленные углы */
+            font-size: 14px; /* Уменьшен размер шрифта */
+        }
+
+        .settings-button {
+            margin-left: 10px;
+            cursor: pointer;
+            border: none;
+            background-color: #444;
+            color: white;
+            padding: 8px; /* Уменьшено значение */
+            border-radius: 5px;
+        }
+
+        #note-list {
+            margin: 0 auto;
+            max-width: 600px; /* Максимальная ширина списка заметок */
+        }
+
+        .note-item {
+            border: 1px solid #666; /* Граница заметки */
+            padding: 15px;
+            margin: 10px 0; /* Отступ между заметками */
+            background-color: rgba(255, 255, 255, 0.1); /* Полупрозрачный фон */
+            border-radius: 5px; /* Скругленные углы */
+        }
+
+        #no-notes {
+            text-align: center;
+            color: lightgray;
+            font-size: 24px;
+            margin-top: 20px; /* Отступ сверху */
+        }
+
+        .bottom-buttons {
+            display: flex;
+            justify-content: space-around;
+            position: fixed;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            background-color: transparent; /* Прозрачный фон */
+            padding: 10px;
+        }
+
+        .bottom-buttons button {
+            font-size: 18px;
+            background-color: transparent; /* Прозрачный фон кнопок */
+            border: none; /* Убираем границу */
+            cursor: pointer; /* Указатель на кликабельность */
+        }
+
+        .bottom-buttons button:hover {
+            background-color: rgba(255, 255, 255, 0.5); /* Полупрозрачный фон при наведении */
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal-content {
+            background-color: rgba(51, 51, 51, 0.9);
+            color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Лента</h1>
+
+    <div class="search-container">
+        <input type="text" id="search" placeholder="Поиск по заметкам..." oninput="filterNotes()">
+        <button class="settings-button" onclick="showSettings()">⚙️</button> <!-- Изменения: иконка шестерёнки -->
+    </div>
+
+    <div id="note-list"></div>
+    <div id="no-notes" style="display: none;">Нет публичных заметок.</div>
+
+    <div class="bottom-buttons">
+        <button id="stream-button" onclick="location.href='stream.html'">📰 Лента</button>
+        <button id="my-notes-button" onclick="location.href='index.html'">📝 Мои заметки</button>
+    </div>
+
+    <!-- Модальное окно для настроек поиска -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSettings()">×</span>
+            <h2>Настройки Поиска</h2>
+            <label for="author-name">Имя автора:</label>
+            <input type="text" id="author-name" placeholder="Введите имя автора" oninput="filterNotes()">
+            <h3>Сортировка:</h3>
+            <select id="sort-options" onchange="sortNotes()">
+                <option value="date">По дате создания</option>
+                <option value="title">По заголовку</option>
+                <option value="popularity">По популярности</option>
+            </select>
+            <button onclick="saveSettings()">Сохранить настройки</button>
+        </div>
+    </div>
+
+    <script>
+        // Загрузка настроек стиля при загрузке страницы
+        function loadStyles() {
+            const bgColor = localStorage.getItem('bgColor') || '#000'; 
+            const textColor = localStorage.getItem('textColor') || '#fff'; 
+
+            document.body.style.backgroundColor = bgColor;
+            document.body.style.color = textColor;
+
+            // Изменение цвета кнопок в соответствии с настройками
+            const buttonColor = textColor; // Цвет текста кнопок
+            document.querySelectorAll('.bottom-buttons button').forEach(btn => {
+                btn.style.color = buttonColor;
+            });
+        }
+
+        let notes = JSON.parse(localStorage.getItem('notes')) || [];
+        let currentAuthor = ""; // Текущий автор
+        let currentSort = 'date'; // Текущая сортировка
+
+        function displayNotes(filteredNotes) {
+            const noteList = document.getElementById('note-list');
+            noteList.innerHTML = '';
+
+            if (filteredNotes.length === 0) {
+                noteList.style.display = 'none';
+                document.getElementById('no-notes').style.display = 'block';
+            } else {
+                noteList.style.display = 'block';
+                document.getElementById('no-notes').style.display = 'none'; 
+
+                filteredNotes.forEach(note => {
+                    const noteDiv = document.createElement('div');
+                    noteDiv.className = 'note-item';
+                    noteDiv.innerHTML = `<h3 onclick="viewNote('${note.id}')">${note.title}</h3>`;
+                    noteList.appendChild(noteDiv);
+                });
+            }
+        }
+
+        function filterNotes() {
+            const searchValue = document.getElementById('search').value.toLowerCase();
+            const authorValue = document.getElementById('author-name').value.toLowerCase();
+
+            const filteredNotes = notes.filter(note =>
+                note.isPublic && 
+                (note.title.toLowerCase().includes(searchValue) || 
+                (note.content && note.content.toLowerCase().includes(searchValue))) &&
+                (authorValue ? note.author.toLowerCase() === authorValue : true) // Фильтруем по текущему автору
+            );
+
+            sortNotes(filteredNotes); // Сортируем отфильтрованные заметки
+        }
+
+        function sortNotes(filteredNotes) {
+            const sortValue = document.getElementById('sort-options').value;
+            let sortedNotes;
+
+            if (sortValue === 'date') {
+                sortedNotes = [...filteredNotes].sort((a, b) => new Date(b.date) - new Date(a.date));
+            } else if (sortValue === 'title') {
+                sortedNotes = [...filteredNotes].sort((a, b) => a.title.localeCompare(b.title));
+            } else if (sortValue === 'popularity') {
+                sortedNotes = [...filteredNotes].sort((a, b) => b.likes - a.likes);
+            }
+
+            displayNotes(sortedNotes); // Отображаем отсортированные заметки
+        }
+
+        function viewNote(noteId) {
+            localStorage.setItem('currentNoteId', noteId); 
+            window.location.href = 'view-note.html'; 
+        }
+
+        function showSettings() {
+            document.getElementById('settings-modal').style.display = "block";
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').style.display = "none";
+        }
+
+        function saveSettings() {
+            currentAuthor = document.getElementById('author-name').value;
+            localStorage.setItem('currentAuthor', currentAuthor); // Сохраняем автора
+            closeSettings();
+            filterNotes(); // Применяем фильтр заметок
+        }
+
+        loadStyles(); 
+        currentAuthor = localStorage.getItem('currentAuthor') || ""; // Восстанавливаем текущего автора
+        displayNotes(notes.filter(note => note.isPublic)); // Отображаем только публичные заметки при загрузке
+    </script>
+</body>
+
+</html>

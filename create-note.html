@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создание заметки</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+        }
+
+        #note-content {
+            border: 1px solid #ccc;
+            padding: 10px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            background: black;
+            color: white;
+            font-family: monospace;
+            line-height: 1.5;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .custom-file-upload {
+            display: inline-block;
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #ffffff00;
+            color: white;
+            border-radius: 5px;
+            margin-top: 10px;
+            border: 1px solid #ccc; /* Добавлена граница для кнопок загрузки */
+        }
+
+        .custom-file-upload:hover {
+            background-color: #a1121200;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .emoji-button {
+            cursor: pointer;
+            padding: 5px;
+            font-size: 24px;
+        }
+
+        .visibility-toggle {
+            margin-top: 20px;
+            color: white;
+        }
+
+        .reminder {
+            margin-top: 20px;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Создание заметки</h1>
+    <form id="note-form" onsubmit="saveNote(); return false;">
+        <input type="text" id="note-title" placeholder="Название заметки" required>
+        <div id="note-content" contenteditable="true" required></div>
+
+        <button type="button" onclick="openModal()">😀</button>
+
+        <input type="file" id="image-input" class="file-input" accept="image/*" onchange="addImageToText(this)">
+        <label for="image-input" class="custom-file-upload">📷</label>
+
+        <input type="file" id="video-input" class="file-input" accept="video/*" onchange="addVideoToText(this)">
+        <label for="video-input" class="custom-file-upload">🎥</label>
+
+        <div class="visibility-toggle">
+            <label>
+                <input type="checkbox" id="visibility-checkbox"> Публичная заметка
+            </label>
+        </div>
+
+        <div class="reminder">
+            <label for="reminder-time">Напоминание:</label>
+            <input type="datetime-local" id="reminder-time">
+        </div>
+
+        <button type="submit">Сохранить Заметку</button>
+    </form>
+    <button onclick="location.href='index.html'">Назад к заметкам</button>
+
+    <div id="emojiModal" class="modal">
+        <div class="modal-content">
+            <span onclick="closeModal()" style="cursor: pointer; float: right;">&times;</span>
+            <div id="emoji-container">
+                <span class="emoji-button" onclick="insertEmoji('😀')">😀</span>
+                <span class="emoji-button" onclick="insertEmoji('😀')">😀</span>
+                <span class="emoji-button" onclick="insertEmoji('❤️')">❤️</span>
+                <span class="emoji-button" onclick="insertEmoji('😃')">😃</span>
+                <span class="emoji-button" onclick="insertEmoji('😄')">😄</span>
+                <span class="emoji-button" onclick="insertEmoji('😁')">😁</span>
+                <span class="emoji-button" onclick="insertEmoji('😆')">😆</span>
+                <span class="emoji-button" onclick="insertEmoji('😂')">😂</span>
+                <span class="emoji-button" onclick="insertEmoji('🤣')">🤣</span>
+                <span class="emoji-button" onclick="insertEmoji('😅')">😅</span>
+                <span class="emoji-button" onclick="insertEmoji('😊')">😊</span>
+                <span class="emoji-button" onclick="insertEmoji('💕')">💕</span>
+                <span class="emoji-button" onclick="insertEmoji('😇')">😇</span>
+                <span class="emoji-button" onclick="insertEmoji('🙂')">🙂</span>
+                <span class="emoji-button" onclick="insertEmoji('🙃')">🙃</span>
+                <span class="emoji-button" onclick="insertEmoji('😉')">😉</span>
+                <span class="emoji-button" onclick="insertEmoji('😍')">😍</span>
+                <span class="emoji-button" onclick="insertEmoji('🥰')">🥰</span>
+                <span class="emoji-button" onclick="insertEmoji('😘')">😘</span>
+                <span class="emoji-button" onclick="insertEmoji('😗')">😗</span>
+                <span class="emoji-button" onclick="insertEmoji('💓')">💓</span>
+                <span class="emoji-button" onclick="insertEmoji('😙')">😙</span>
+                <span class="emoji-button" onclick="insertEmoji('😚')">😚</span>
+                <span class="emoji-button" onclick="insertEmoji('😋')">😋</span>
+                <span class="emoji-button" onclick="insertEmoji('😜')">😜</span>
+                <span class="emoji-button" onclick="insertEmoji('😝')">😝</span>
+                <span class="emoji-button" onclick="insertEmoji('🤪')">🤪</span>
+                <span class="emoji-button" onclick="insertEmoji('🤨')">🤨</span>
+                <span class="emoji-button" onclick="insertEmoji('🧐')">🧐</span>
+                <span class="emoji-button" onclick="insertEmoji('😎')">😎</span>
+                <span class="emoji-button" onclick="insertEmoji('🥳')">🥳</span>
+                <span class="emoji-button" onclick="insertEmoji('🤩')">🤩</span>
+                <span class="emoji-button" onclick="insertEmoji('😏')">😏</span>
+                <span class="emoji-button" onclick="insertEmoji('💘')">💘</span>
+                <span class="emoji-button" onclick="insertEmoji('😒')">😒</span>
+                <span class="emoji-button" onclick="insertEmoji('😞')">😞</span>
+                <span class="emoji-button" onclick="insertEmoji('😔')">😔</span>
+                <span class="emoji-button" onclick="insertEmoji('😟')">😟</span>
+                <span class="emoji-button" onclick="insertEmoji('😕')">😕</span>
+                <span class="emoji-button" onclick="insertEmoji('🙁')">🙁</span>
+                <span class="emoji-button" onclick="insertEmoji('😣')">😣</span>
+                <span class="emoji-button" onclick="insertEmoji('😖')">😖</span>
+                <span class="emoji-button" onclick="insertEmoji('😫')">😫</span>
+                <span class="emoji-button" onclick="insertEmoji('💔')">💔</span>
+                <span class="emoji-button" onclick="insertEmoji('😩')">😩</span>
+                <span class="emoji-button" onclick="insertEmoji('🥺')">🥺</span>
+                <span class="emoji-button" onclick="insertEmoji('😢')">😢</span>
+                <span class="emoji-button" onclick="insertEmoji('😭')">😭</span>
+                <span class="emoji-button" onclick="insertEmoji('😤')">😤</span>
+                <span class="emoji-button" onclick="insertEmoji('😠')">😠</span>
+                <span class="emoji-button" onclick="insertEmoji('😡')">😡</span>
+                <span class="emoji-button" onclick="insertEmoji('🤬')">🤬</span>
+                <span class="emoji-button" onclick="insertEmoji('😱')">😱</span>
+                <span class="emoji-button" onclick="insertEmoji('😨')">😨</span>
+                <span class="emoji-button" onclick="insertEmoji('😰')">😰</span>
+                <span class="emoji-button" onclick="insertEmoji('😷')">😷</span>
+                <span class="emoji-button" onclick="insertEmoji('🤒')">🤒</span>
+                <span class="emoji-button" onclick="insertEmoji('🤕')">🤕</span>
+                <span class="emoji-button" onclick="insertEmoji('🤢')">🤢</span>
+                <span class="emoji-button" onclick="insertEmoji('🤮')">🤮</span>
+                <span class="emoji-button" onclick="insertEmoji('😵')">😵</span>
+                <span class="emoji-button" onclick="insertEmoji('😳')">😳</span>
+                <span class="emoji-button" onclick="insertEmoji('💜')">💜</span>
+                <span class="emoji-button" onclick="insertEmoji('😱')">😱</span>
+                <span class="emoji-button" onclick="insertEmoji('😨')">😨</span>
+                <span class="emoji-button" onclick="insertEmoji('😰')">😰</span>
+                <span class="emoji-button" onclick="insertEmoji('😢')">😢</span>
+                <span class="emoji-button" onclick="insertEmoji('😭')">😭</span>
+                <span class="emoji-button" onclick="insertEmoji('😩')">😩</span>
+                <span class="emoji-button" onclick="insertEmoji('🥳')">🥳</span>
+                <span class="emoji-button" onclick="insertEmoji('😇')">😇</span>
+                <span class="emoji-button" onclick="insertEmoji('👻')">👻</span>
+                <span class="emoji-button" onclick="insertEmoji('💀')">💀</span>
+                <span class="emoji-button" onclick="insertEmoji('👽')">👽</span>
+                <span class="emoji-button" onclick="insertEmoji('🧙‍♀️')">🧙‍♀️</span>
+                <span class="emoji-button" onclick="insertEmoji('🦄')">🦄</span>
+                <span class="emoji-button" onclick="insertEmoji('🐯')">🐯</span>
+                <span class="emoji-button" onclick="insertEmoji('🐶')">🐶</span>
+                <span class="emoji-button" onclick="insertEmoji('🐱')">🐱</span>
+                <span class="emoji-button" onclick="insertEmoji('🦋')">🦋</span>
+                <span class="emoji-button" onclick="insertEmoji('🎉')">🎉</span>
+                <span class="emoji-button" onclick="insertEmoji('🎊')">🎊</span>
+                <span class="emoji-button" onclick="insertEmoji('🎈')">🎈</span>
+                <span class="emoji-button" onclick="insertEmoji('🥇')">🥇</span>
+                <span class="emoji-button" onclick="insertEmoji('🥈')">🥈</span>
+                <span class="emoji-button" onclick="insertEmoji('🥉')">🥉</span>
+                <span class="emoji-button" onclick="insertEmoji('🏆')">🏆</span>
+                <span class="emoji-button" onclick="insertEmoji('🏅')">🏅</span>
+                <span class="emoji-button" onclick="insertEmoji('🥂')">🥂</span>
+                <span class="emoji-button" onclick="insertEmoji('🍾')">🍾</span>
+                <span class="emoji-button" onclick="insertEmoji('🍻')">🍻</span>
+                <span class="emoji-button" onclick="insertEmoji('🍕')">🍕</span>
+                <span class="emoji-button" onclick="insertEmoji('🍔')">🍔</span>
+                <span class="emoji-button" onclick="insertEmoji('🌹')">🌹</span>
+                <span class="emoji-button" onclick="insertEmoji('🌺')">🌺</span>
+                <span class="emoji-button" onclick="insertEmoji('🌻')">🌻</span>
+                <span class="emoji-button" onclick="insertEmoji('🌼')">🌼</span>
+                <span class="emoji-button" onclick="insertEmoji('🌷')">🌷</span>
+                <span class="emoji-button" onclick="insertEmoji('🌈')">🌈</span>
+                <span class="emoji-button" onclick="insertEmoji('☀️')">☀️</span>
+                <!-- Добавьте другие смайлы при необходимости -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const editingIndex = localStorage.getItem('editingIndex');
+        const notes = JSON.parse(localStorage.getItem('notes')) || [];
+        const currentNickname = localStorage.getItem('nickname') || 'Неизвестен'; 
+
+        document.addEventListener('DOMContentLoaded', function () {
+            applySavedStyles();
+
+            // Заполнение формы для редактирования
+            if (editingIndex !== null) {
+                const index = parseInt(editingIndex); // Преобразуем значение в число
+                const note = notes[index];
+                if (note) { // Проверяем, существует ли заметка
+                    document.getElementById('note-title').value = note.title;
+                    document.getElementById('note-content').innerHTML = note.content;
+                    document.getElementById('visibility-checkbox').checked = note.isPublic;
+                    if (note.reminder) { // Заполняем напоминание
+                        document.getElementById('reminder-time').value = note.reminder;
+                    }
+                }
+            }
+
+            // Добавляем обработчик ввода для калькулятора
+            document.getElementById('note-content').addEventListener('input', updateResult);
+        });
+
+        function applySavedStyles() {
+            const savedBgColor = localStorage.getItem('bgColor');
+            const savedTextColor = localStorage.getItem('textColor');
+
+            if (savedBgColor) {
+                document.body.style.backgroundColor = savedBgColor;
+            }
+            if (savedTextColor) {
+                document.body.style.color = savedTextColor; 
+                document.getElementById('note-content').style.color = savedTextColor; 
+            }
+        }
+        
+        function addImageToText(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const imgTag = `<img src="${e.target.result}" style="max-width: 100%;" />`;
+                    const noteContent = document.getElementById('note-content');
+                    noteContent.innerHTML += imgTag;
+                    noteContent.innerHTML += '<br>';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function addVideoToText(input) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const videoTag = `<video controls style="max-width: 100%;" src="${e.target.result}"></video>`;
+                    const noteContent = document.getElementById('note-content');
+                    noteContent.innerHTML += videoTag;
+                    noteContent.innerHTML += '<br>';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function insertEmoji(emoji) {
+            const noteContent = document.getElementById('note-content');
+            noteContent.innerHTML += emoji;
+            closeModal();
+        }
+
+        function saveNote() {
+            const title = document.getElementById('note-title').value;
+            const content = document.getElementById('note-content').innerHTML;
+            const isPublic = document.getElementById('visibility-checkbox').checked;
+            const reminder = document.getElementById('reminder-time').value; // Получаем значение напоминания
+
+            // Сохранение заметки
+            if (editingIndex !== null) {
+                const index = parseInt(editingIndex);
+                if (notes[index]) { // Проверяем наличие заметки
+                    notes[index] = { 
+                        id: notes[index].id, 
+                        title: title, 
+                        content: content, 
+                        author: currentNickname, 
+                        isPublic: isPublic,
+                        reminder: reminder // Сохраняем напоминание
+                    };
+                }
+            } else {
+                const noteId = Date.now();
+                notes.push({ 
+                    id: noteId, 
+                    title: title, 
+                    content: content, 
+                    author: currentNickname, 
+                    isPublic: isPublic,
+                    reminder: reminder // Сохраняем напоминание
+                });
+            }
+
+            localStorage.setItem('notes', JSON.stringify(notes));
+            localStorage.removeItem('editingIndex');
+            location.href = 'index.html';
+        }
+
+        function openModal() {
+            document.getElementById('emojiModal').style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById('emojiModal').style.display = "none";
+        }
+
+        window.onclick = function (event) {
+            const modal = document.getElementById('emojiModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        function updateResult() {
+            const contentElement = document.getElementById('note-content');
+            const content = contentElement.innerHTML;
+            const lastLine = content.split('<br>').pop().trim().replace(/<[^>]*>/g, '');
+
+            if (lastLine.endsWith('=')) {
+                const expression = lastLine.slice(0, -1).trim();
+                try {
+                    const result = eval(expression);
+                    const updatedContent = content.replace(lastLine, `${expression}=${result}`);
+                    
+                    // Вставка результата
+                    const selection = window.getSelection();
+                    const range = selection.getRangeAt(0);
+                    
+                    // Удаляем последние символы
+                    const lastLineNode = range.startContainer;
+                    const lastLineText = lastLineNode.textContent;
+                    lastLineNode.textContent = lastLineText.slice(0, lastLineText.length - lastLine.length);
+                    
+                    // Вставляем результат
+                    const resultNode = document.createTextNode(` ${expression}=${result}\n`); // Или добавьте <br> в конце
+                    lastLineNode.parentNode.insertBefore(resultNode, lastLineNode.nextSibling);
+                    
+                    // Устанавливаем курсор после результата
+                    range.setStartAfter(resultNode);
+                    range.collapse(true);
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                } catch (error) {
+                    // Игнорируем ошибку
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
+

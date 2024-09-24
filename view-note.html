@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Просмотр Заметки</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background-color: #000; /* Черный фон по умолчанию */
+            color: #fff; /* Белый текст */
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        .vote-buttons {
+            margin: 20px 0;
+        }
+
+        .comment {
+            border: 1px solid #555;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .modal {
+            display: none; /* Скрыто по умолчанию */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            padding-top: 60px;
+            background-color: rgba(0, 0, 0, 0.8); /* Полупрозрачный фон для модального окна */
+        }
+
+        .modal-content {
+            background-color: inherit; /* Унаследованный цвет фона */
+            color: inherit; /* Унаследованный цвет текста */
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            border-radius: 8px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: white;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="note-content">Загрузка...</div>
+    <div class="vote-buttons">
+        <button id="like-button">👍 <span id="like-count">0</span></button>
+        <button id="dislike-button">👎 <span id="dislike-count">0</span></button>
+    </div>
+    <button onclick="goBack()">Назад</button>
+    <button id="show-comments-button">Показать комментарии</button>
+
+    <div id="comments-modal" class="modal">
+        <div class="modal-content" id="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Комментарии <span id="comment-count"></span></h2>
+            <textarea id="comment-input" placeholder="Добавьте комментарий..."></textarea>
+            <button id="add-comment-button">Добавить комментарий</button>
+            <div id="comments-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // Загружаем настройки из localStorage
+        const savedBgColor = localStorage.getItem('bgColor') || '#000000';
+        const savedTextColor = localStorage.getItem('textColor') || '#ffffff';
+
+        // Устанавливаем фон и цвет текста
+        document.body.style.backgroundColor = savedBgColor;
+        document.body.style.color = savedTextColor;
+        
+        let notes = JSON.parse(localStorage.getItem('notes')) || [];
+        const noteId = localStorage.getItem('currentNoteId');
+        const noteContentDiv = document.getElementById('note-content');
+        const commentInput = document.getElementById('comment-input');
+        const commentsList = document.getElementById('comments-list');
+        const commentCountDiv = document.getElementById('comment-count');
+
+        const userId = "userUniqueId"; // Замените на уникальный идентификатор пользователя
+        const userNickname = localStorage.getItem('nickname') || "Аноним"; // Получаем никнейм пользователя или "Аноним"
+
+        const note = notes.find(n => n.id == noteId && n.isPublic);
+        if (note) {
+            noteContentDiv.innerHTML = `<h1 style="color: ${savedTextColor};">${note.title}</h1><p style="color: ${savedTextColor};">Автор: ${note.author || "Неизвестен"}</p><p style="color: ${savedTextColor};">${note.content}</p>`;
+
+            let likeCount = note.likeCount || 0;
+            let dislikeCount = note.dislikeCount || 0;
+            note.likedBy = note.likedBy || [];
+            note.dislikedBy = note.dislikedBy || [];
+            note.comments = note.comments || [];
+
+            document.getElementById('like-count').textContent = likeCount;
+            document.getElementById('dislike-count').textContent = dislikeCount;
+
+            document.getElementById('like-button').onclick = function() {
+                handleLikeDislike(note, 'like');
+            };
+
+            document.getElementById('dislike-button').onclick = function() {
+                handleLikeDislike(note, 'dislike');
+            };
+
+            function handleLikeDislike(note, action) {
+                if (action === 'like') {
+                    // Убираем лайк
+                    if (note.likedBy.includes(userId)) {
+                        note.likedBy = note.likedBy.filter(id => id !== userId);
+                        likeCount--;
+                    } else {
+                        // Добавляем лайк
+                        if (note.dislikedBy.includes(userId)) {
+                            note.dislikedBy = note.dislikedBy.filter(id => id !== userId);
+                            dislikeCount--;
+                        }
+
+                        note.likedBy.push(userId);
+                        likeCount++;
+                    }
+                } else if (action === 'dislike') {
+                    // Убираем дизлайк
+                    if (note.dislikedBy.includes(userId)) {
+                        note.dislikedBy = note.dislikedBy.filter(id => id !== userId);
+                        dislikeCount--;
+                    } else {
+                        // Добавляем дизлайк
+                        if (note.likedBy.includes(userId)) {
+                            note.likedBy = note.likedBy.filter(id => id !== userId);
+                            likeCount--;
+                        }
+
+                        note.dislikedBy.push(userId);
+                        dislikeCount++;
+                    }
+                }
+                updateVoteCounts();
+            }
+
+            function updateVoteCounts() {
+                note.likeCount = likeCount;
+                note.dislikeCount = dislikeCount;
+                document.getElementById('like-count').textContent = likeCount;
+                document.getElementById('dislike-count').textContent = dislikeCount;
+                localStorage.setItem('notes', JSON.stringify(notes));
+            }
+
+            function displayComments() {
+                commentsList.innerHTML = '';
+                let totalCommentsCount = 0;
+
+                note.comments.forEach((comment, index) => {
+                    const commentDiv = document.createElement('div');
+                    commentDiv.className = 'comment';
+                    commentDiv.innerHTML = `
+                        <strong style="color: ${savedTextColor};">${comment.userNickname || "Аноним"}:</strong> ${comment.text}
+                        <button onclick="likeComment(${index})">👍 ${comment.likeCount || 0}</button>
+                        <button onclick="dislikeComment(${index})">👎 ${comment.dislikeCount || 0}</button>
+                        <span class="dots" onclick="toggleDotsMenu(event, ${index})">⋮</span>
+                        <div class="dots-menu" id="dots-menu-${index}">
+                            <button onclick="deleteComment(${index})">Удалить</button>
+                        </div>
+                        <button onclick="showReplyInput(${index})">Ответить</button>
+                        <div class="reply" id="reply-${index}" style="display: none;">
+                            <textarea placeholder="Ваш ответ..."></textarea>
+                            <button onclick="addReply(${index})">Отправить</button>
+                        </div>
+                    `;
+                    commentsList.appendChild(commentDiv);
+                    totalCommentsCount++;
+
+                    comment.replies.forEach((reply, replyIndex) => {
+                        const replyDiv = document.createElement('div');
+                        replyDiv.className = 'reply';
+                        replyDiv.innerHTML = `
+                            <strong style="color: ${savedTextColor};">${reply.userNickname || "Аноним"}:</strong> ${reply.text}
+                            <button onclick="likeReply(${index}, ${reply.id})">👍 ${reply.likeCount || 0}</button>
+                            <button onclick="dislikeReply(${index}, ${reply.id})">👎 ${reply.dislikeCount || 0}</button>
+                            <span class="dots" onclick="toggleDotsReplyMenu(event, ${index}, ${reply.id})">⋮</span>
+                            <div class="dots-menu" id="dots-reply-menu-${index}-${reply.id}">
+                                <button onclick="deleteReply(${index}, ${reply.id})">Удалить</button>
+                            </div>
+                            <button onclick="showReplyInput(${index}, ${reply.id})">Ответить</button>
+                            <div class="reply" id="reply-${index}-${reply.id}" style="display: none;">
+                                <textarea placeholder="Ваш ответ..."></textarea>
+                                <button onclick="addReply(${index}, ${reply.id})">Отправить</button>
+                            </div>
+                        `;
+                        commentDiv.appendChild(replyDiv);
+                        totalCommentsCount++;
+                    });
+                });
+                commentCountDiv.textContent = totalCommentsCount; // Обновляем общее количество комментариев
+            }
+
+            function likeComment(index) {
+                const comment = note.comments[index];
+                handleCommentLikeDislike(comment, 'like');
+            }
+
+            function dislikeComment(index) {
+                const comment = note.comments[index];
+                handleCommentLikeDislike(comment, 'dislike');
+            }
+
+            function handleCommentLikeDislike(comment, action) {
+                if (action === 'like') {
+                    if (!comment.likedBy) {
+                        comment.likedBy = [];
+                    }
+                    if (!comment.dislikedBy) {
+                        comment.dislikedBy = [];
+                    }
+
+                    if (comment.likedBy.includes(userId)) {
+                        comment.likedBy = comment.likedBy.filter(id => id !== userId);
+                        comment.likeCount--;
+                    } else {
+                        if (comment.dislikedBy.includes(userId)) {
+                            comment.dislikedBy = comment.dislikedBy.filter(id => id !== userId);
+                            comment.dislikeCount--;
+                        }
+                        comment.likedBy.push(userId);
+                        comment.likeCount = (comment.likeCount || 0) + 1;
+                    }
+                } else if (action === 'dislike') {
+                    if (!comment.likedBy) {
+                        comment.likedBy = [];
+                    }
+                    if (!comment.dislikedBy) {
+                        comment.dislikedBy = [];
+                    }
+
+                    if (comment.dislikedBy.includes(userId)) {
+                        comment.dislikedBy = comment.dislikedBy.filter(id => id !== userId);
+                        comment.dislikeCount--;
+                    } else {
+                        if (comment.likedBy.includes(userId)) {
+                            comment.likedBy = comment.likedBy.filter(id => id !== userId);
+                            comment.likeCount--;
+                        }
+                        comment.dislikedBy.push(userId);
+                        comment.dislikeCount = (comment.dislikeCount || 0) + 1;
+                    }
+                }
+
+                localStorage.setItem('notes', JSON.stringify(notes));
+                displayComments();
+            }
+
+            document.getElementById('add-comment-button').onclick = function() {
+                const commentText = commentInput.value.trim();
+                if (commentText) {
+                    note.comments.push({ 
+                        text: commentText,
+                        userId: userId,
+                        userNickname: userNickname, // Сохраняем никнейм пользователя
+                        replies: [], 
+                        likeCount: 0, 
+                        dislikeCount: 0
+                    });
+                    localStorage.setItem('notes', JSON.stringify(notes));
+                    commentInput.value = '';
+                    displayComments();
+                }
+            };
+
+            window.deleteComment = function(index) {
+                note.comments.splice(index, 1);
+                localStorage.setItem('notes', JSON.stringify(notes));
+                displayComments();
+            };
+
+            window.showReplyInput = function(commentIndex) {
+                const replyDiv = document.getElementById(`reply-${commentIndex}`);
+                replyDiv.style.display = replyDiv.style.display === 'none' ? 'block' : 'none';
+            };
+
+            window.addReply = function(commentIndex) {
+                const replyInput = document.querySelector(`#reply-${commentIndex} textarea`);
+                const replyText = replyInput.value.trim();
+                if (replyText) {
+                    const replyId = (note.comments[commentIndex].replies.length > 0) ? note.comments[commentIndex].replies[note.comments[commentIndex].replies.length - 1].id + 1 : 0; // уникальный ID ответа
+                    note.comments[commentIndex].replies.push({ 
+                        text: replyText, 
+                        userId: userId, 
+                        userNickname: userNickname, // Сохраняем никнейм пользователя
+                        likeCount: 0, 
+                        dislikeCount: 0, 
+                        id: replyId 
+                    });
+                    localStorage.setItem('notes', JSON.stringify(notes));
+                    replyInput.value = '';
+                    displayComments();
+                }
+            };
+
+            window.likeReply = function(commentIndex, replyId) {
+                const reply = note.comments[commentIndex].replies.find(r => r.id === replyId);
+                handleReplyLikeDislike(reply, 'like');
+            };
+
+            window.dislikeReply = function(commentIndex, replyId) {
+                const reply = note.comments[commentIndex].replies.find(r => r.id === replyId);
+                handleReplyLikeDislike(reply, 'dislike');
+            };
+
+            function handleReplyLikeDislike(reply, action) {
+                if (action === 'like') {
+                    if (!reply.likedBy) {
+                        reply.likedBy = [];
+                    }
+                    if (!reply.dislikedBy) {
+                        reply.dislikedBy = [];
+                    }
+
+                    if (reply.likedBy.includes(userId)) {
+                        reply.likedBy = reply.likedBy.filter(id => id !== userId);
+                        reply.likeCount--;
+                    } else {
+                        if (reply.dislikedBy.includes(userId)) {
+                            reply.dislikedBy = reply.dislikedBy.filter(id => id !== userId);
+                            reply.dislikeCount--;
+                        }
+                        reply.likedBy.push(userId);
+                        reply.likeCount = (reply.likeCount || 0) + 1;
+                    }
+                } else if (action === 'dislike') {
+                    if (!reply.likedBy) {
+                        reply.likedBy = [];
+                    }
+                    if (!reply.dislikedBy) {
+                        reply.dislikedBy = [];
+                    }
+
+                    if (reply.dislikedBy.includes(userId)) {
+                        reply.dislikedBy = reply.dislikedBy.filter(id => id !== userId);
+                        reply.dislikeCount--;
+                    } else {
+                        if (reply.likedBy.includes(userId)) {
+                            reply.likedBy = reply.likedBy.filter(id => id !== userId);
+                            reply.likeCount--;
+                        }
+                        reply.dislikedBy.push(userId);
+                        reply.dislikeCount = (reply.dislikeCount || 0) + 1;
+                    }
+                }
+
+                localStorage.setItem('notes', JSON.stringify(notes));
+                displayComments();
+            }
+
+            window.deleteReply = function(commentIndex, replyId) {
+                const replyIndex = note.comments[commentIndex].replies.findIndex(r => r.id === replyId);
+                if (replyIndex > -1) {
+                    note.comments[commentIndex].replies.splice(replyIndex, 1);
+                    localStorage.setItem('notes', JSON.stringify(notes));
+                    displayComments();
+                }
+            };
+
+            window.toggleDotsMenu = function(event, index) {
+                event.stopPropagation();
+                const menu = document.getElementById(`dots-menu-${index}`);
+                menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+            };
+
+            window.toggleDotsReplyMenu = function(event, commentIndex, replyId) {
+                event.stopPropagation();
+                const menu = document.getElementById(`dots-reply-menu-${commentIndex}-${replyId}`);
+                menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+            };
+
+            window.onclick = function(event) {
+                const menus = document.querySelectorAll('.dots-menu');
+                menus.forEach(menu => {
+                    menu.style.display = 'none';
+                });
+            };
+
+            displayComments(); // Отображаем комментарии при загрузке
+        } else {
+            noteContentDiv.innerHTML = '<p>Заметка не найдена или недоступна.</p>';
+        }
+
+        function goBack() {
+            window.history.back();
+        }
+
+        document.getElementById('show-comments-button').onclick = function() {
+            displayComments();
+            document.getElementById('comments-modal').style.display = 'block';
+        };
+
+        function closeModal() {
+            document.getElementById('comments-modal').style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>
