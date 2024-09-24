@@ -1,0 +1,79 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #111; /* Черный фон */
+    color: #fff; /* Белый текст */
+}
+
+h1, h2 {
+    text-align: center;
+}
+
+button {
+    background-color: #222; /* Темно-серый */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 5px; /* Отступ для кнопок */
+    display: inline-block; /* Отображение кнопок в одной строке */
+}
+
+button:hover {
+    background-color: #dfdfdf00; /* Красный при наведении */
+}
+
+.note-item {
+    background-color: #222; /* Темно-серый фон заметки */
+    padding: 15px;
+    margin-top: 10px;
+    border-radius: 8px;
+    box-shadow: 0 0 5px rgba(255, 0, 0, 0.1);
+}
+
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.note-title {
+    flex-grow: 1;
+    margin: 0;
+}
+
+.note-content {
+    margin-top: 10px;
+    max-width: 100%;
+    overflow-wrap: break-word; /* Перенос слишком длинных слов */
+}
+
+form {
+    background-color: #222; /* Темно-серый */
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+input[type="text"],
+textarea {
+    width: calc(100% - 20px); /* Учитываем паддинги */
+    margin: 10px 0; /* Убираем правый и левый отступ для единообразия */
+    padding: 10px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background-color: #333; /* Темно-серый текстовое поле */
+    color: #fff;
+}
+
+textarea {
+    resize: vertical; /* Позволяют изменять размер только по вертикали */
+}
+
+#no-notes {
+    display: block;
+    color: lightgray;
+    font-size: 24px; /* Увеличен размер шрифта */
+    text-align: center; /* Текст по центру страницы */
+}

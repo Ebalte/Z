@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Мобильный сайт заметок</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Стили для модального окна */
+        .modal {
+            display: none; /* Скрыто по умолчанию */
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; /* Позволяет скроллить, если это необходимо */
+            background-color: rgba(0, 0, 0, 0.8); /* Полупрозрачный черный фон */
+        }
+
+        .modal-content {
+            background-color: rgba(51, 51, 51, 0.9); /* Темный фон для модального окна с прозрачностью */
+            color: white; /* Белый текст */
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%; /* Максимальная ширина модального окна */
+            max-width: 600px; /* Максимальная ширина */
+            border-radius: 8px; /* Скругленные углы */
+        }
+
+        /* Стили для заголовка */
+        h1 {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Стили для заметок */
+        .note-item {
+            border: 1px solid #000000;
+            padding: 10px;
+            margin: 5px;
+            background-color: rgba(0, 0, 0, 0.8); /* Прозрачный фон заметки */
+            cursor: pointer; /* Курсор для указания на кликабельность */
+        }
+
+        /* Стили для сообщения "Нет заметок" */
+        #no-notes {
+            color: lightgray;
+            font-size: 24px;
+            text-align: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Центрирование по вертикали и горизонтали */
+            display: none; /* Скрыто по умолчанию */
+        }
+
+        .settings-icon {
+            font-size: 24px;
+            cursor: pointer;
+            margin-left: 10px; /* Отступ слева */
+            color: #b22222; /* Цвет иконки */
+        }
+
+        body {
+            background-image: no-repeat;
+            background-size: cover;
+            transition: background-color 0.5s;
+            opacity: 1; /* По умолчанию полный непрозрачный фон */
+        }
+
+        /* Стили для блока кнопок внизу */
+        .bottom-buttons {
+            display: flex;
+            justify-content: space-around;
+            position: fixed;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            background-color: transparent; /* Прозрачный фон */
+            padding: 10px;
+        }
+
+        .bottom-buttons button {
+            color: #ffffff; /* Стандартный цвет текста кнопок */
+            font-size: 18px;
+            background-color: transparent; /* Прозрачный фон кнопок */
+            border: none; /* Убираем границу */
+            cursor: pointer; /* Указатель на кликабельность */
+        }
+
+        /* Стили для фона на кнопку при наведении */
+        .bottom-buttons button:hover {
+            background-color: rgba(255, 255, 255, 0.5); /* Полупрозрачный фон при наведении */
+            color: #ffffff; /* Меняем цвет текста при наведении */
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Мои Заметки <span class="settings-icon" onclick="showSettings()">⚙️</span></h1>
+    <button id="add-note" onclick="location.href='create-note.html'" style="color: #b22222; font-size: 18px; float: right;">➕</button>
+    <div id="note-list"></div>
+    <div id="no-notes" style="display: block;">Нет заметок.</div>
+
+    <button id="delete-selected" style="display: none;" onclick="showDeleteConfirmation()">Удалить выбранные</button>
+
+    <!-- Модальное окно -->
+    <div id="confirmation-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <p>Вы уверены, что хотите удалить выбранные заметки?</p>
+            <button class="confirm" style="background-color: #b22222; color: white; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer;" onclick="deleteSelectedNotes()">Да, удалить</button>
+            <button class="confirm" style="background-color: #ccc; color: black; padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer;" onclick="closeModal()">Отменить</button>
+        </div>
+    </div>
+    
+    <!-- Модальное окно настроек -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content fullscreen">
+            <span class="close" onclick="closeSettings()">×</span>
+            <h2>Настройки</h2>
+            <label for="bgColor">Цвет фона:</label>
+            <input type="color" id="bgColor" value="#ffffff" onchange="updateBackgroundColor()"><br><br>
+            <label for="textColor">Цвет текста и кнопок:</label>
+            <input type="color" id="textColor" value="#000000" onchange="updateTextColor()"><br><br>
+            <label for="noteBgColor">Цвет области заметки:</label>
+            <input type="color" id="noteBgColor" value="#000000" onchange="updateNoteBackgroundColor()"><br><br>
+            <label for="backgroundImage">Фоновое изображение:</label>
+            <input type="file" id="backgroundImage" accept="image/*" onchange="setBackgroundImage(event)"><br><br>
+            <label for="imageOpacity">Прозрачность фона:</label>
+            <input type="range" id="imageOpacity" min="0" max="100" value="100" onchange="updateImageOpacity()"><br><br>
+            <label for="calculator-toggle">Активировать калькулятор:</label>
+            <input type="checkbox" id="calculator-toggle" onchange="toggleCalculator()"><br><br>
+            <button onclick="resetSettings()">Сбросить настройки</button>
+            <button onclick="closeSettings()">Закрыть</button>
+        </div>
+    </div>
+
+    <!-- Блок с кнопками внизу -->
+    <div class="bottom-buttons">
+        <button onclick="location.href='stream.html'">📰 Лента</button>
+        <button onclick="location.href='index.html'">📝 Мои заметки</button>
+    </div>
+
+    <script>
+        let notes = JSON.parse(localStorage.getItem('notes')) || [];
+
+        // Устанавливаем цвета из localStorage, если они есть
+        const savedBgColor = localStorage.getItem('bgColor');
+        const savedTextColor = localStorage.getItem('textColor');
+        const savedNoteBgColor = localStorage.getItem('noteBgColor');
+        const savedBackgroundImage = localStorage.getItem('backgroundImage');
+        const savedImageOpacity = localStorage.getItem('imageOpacity') || 100; // По умолчанию 100
+        const calculatorEnabled = localStorage.getItem('calculatorEnabled') === 'true';
+
+        if (savedBgColor) {
+            document.body.style.backgroundColor = savedBgColor;
+            document.getElementById('bgColor').value = savedBgColor; // Устанавливаем значение в input
+        }
+
+        if (savedTextColor) {
+            document.body.style.color = savedTextColor;
+            document.getElementById('textColor').value = savedTextColor; // Устанавливаем значение в input
+            document.querySelectorAll('.bottom-buttons button').forEach(btn => {
+                btn.style.color = savedTextColor; // Устанавливаем цвет текста кнопок
+            });
+        }
+
+        if (savedNoteBgColor) {
+            document.querySelectorAll('.note-item').forEach(note => {
+                note.style.backgroundColor = savedNoteBgColor; // Устанавливаем цвет фона заметок
+            });
+            document.getElementById('noteBgColor').value = savedNoteBgColor; // Устанавливаем значение в input
+        }
+
+        if (savedBackgroundImage) {
+            document.body.style.backgroundImage = `url(${savedBackgroundImage})`;
+        }
+
+        document.getElementById('imageOpacity').value = savedImageOpacity; // Устанавливаем значение в input
+        document.body.style.opacity = savedImageOpacity / 100; // Устанавливаем прозрачность
+
+        document.getElementById('calculator-toggle').checked = calculatorEnabled; // Установить состояние переключателя
+
+        displayNotes();
+
+        function displayNotes() {
+            const noteList = document.getElementById('note-list');
+            noteList.innerHTML = '';
+
+            if (notes.length === 0) {
+                document.getElementById('no-notes').style.display = 'block';
+                document.getElementById('delete-selected').style.display = 'none';
+            } else {
+                document.getElementById('no-notes').style.display = 'none';
+                notes.forEach((note, index) => {
+                    const noteDiv = document.createElement('div');
+                    noteDiv.className = 'note-item';
+                    noteDiv.style.backgroundColor = savedNoteBgColor || 'rgba(0, 0, 0, 0.8)'; // Устанавливаем цвет фона заметки
+                    noteDiv.innerHTML = `
+                        <input type="checkbox" onchange="toggleSelect(${index})" ${note.selected ? 'checked' : ''}>
+                        <div class="note-header" onclick="openNote(${index})">
+                            <h3 class="note-title" style="color: ${savedTextColor || '#ffffff'};">${note.title}</h3>
+                        </div>
+                    `;
+                    noteList.appendChild(noteDiv);
+                });
+            }
+
+            const deleteButton = document.getElementById('delete-selected');
+            deleteButton.style.display = notes.some(note => note.selected) ? 'block' : 'none';
+        }
+
+        function openNote(index) {
+            const note = notes[index];
+            const noteDetail = `
+                <h2>${note.title}</h2>
+                <div class="note-content">${note.content}</div>
+                <button onclick="editNote(${index})">Редактировать</button>
+                <button onclick="goBack()">Назад</button>
+            `;
+            document.body.innerHTML = noteDetail; 
+        }
+
+        function editNote(index) {
+            localStorage.setItem('editingIndex', index);
+            location.href = 'create-note.html'; 
+        }
+
+        function goBack() {
+            location.reload(); 
+        }
+
+        function toggleSelect(index) {
+            if (index >= 0 && index < notes.length) {
+                notes[index].selected = !notes[index].selected;
+                localStorage.setItem('notes', JSON.stringify(notes));
+                displayNotes();
+            }
+        }
+
+        function showDeleteConfirmation() {
+            const modal = document.getElementById("confirmation-modal");
+            modal.style.display = "block"; // Показываем модальное окно
+        }
+
+        function closeModal() {
+            const modal = document.getElementById("confirmation-modal");
+            modal.style.display = "none"; // Скрываем модальное окно
+        }
+
+        function showSettings() {
+            const modal = document.getElementById("settings-modal");
+            modal.style.display = "block"; // Показываем модальное окно настроек
+        }
+
+        function closeSettings() {
+            const modal = document.getElementById("settings-modal");
+            modal.style.display = "none"; // Скрываем модальное окно настроек
+        }
+
+        function updateBackgroundColor() {
+            const bgColor = document.getElementById('bgColor').value;
+            document.body.style.backgroundColor = bgColor;
+            localStorage.setItem('bgColor', bgColor);
+        }
+
+        function updateTextColor() {
+            const textColor = document.getElementById('textColor').value;
+            document.body.style.color = textColor;
+            localStorage.setItem('textColor', textColor);
+            displayNotes(); // Обновляем вид заметок
+
+            // Обновляем цвет текста для кнопок
+            document.querySelectorAll('.bottom-buttons button').forEach(btn => {
+                btn.style.color = textColor;
+            });
+        }
+
+        function updateNoteBackgroundColor() {
+            const noteBgColor = document.getElementById('noteBgColor').value;
+            document.querySelectorAll('.note-item').forEach(note => {
+                note.style.backgroundColor = noteBgColor; // Устанавливаем цвет фона заметок
+            });
+            localStorage.setItem('noteBgColor', noteBgColor);
+        }
+
+        function setBackgroundImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.body.style.backgroundImage = `url(${e.target.result})`;
+                    localStorage.setItem('backgroundImage', e.target.result); // Сохраняем фоновое изображение
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function updateImageOpacity() {
+            const opacity = document.getElementById('imageOpacity').value;
+            document.body.style.opacity = opacity / 100; // Изменяем прозрачность
+            localStorage.setItem('imageOpacity', opacity); // Сохраняем значение
+        }
+
+        function toggleCalculator() {
+            const calculatorEnabled = document.getElementById('calculator-toggle').checked;
+            localStorage.setItem('calculatorEnabled', calculatorEnabled);
+        }
+
+        function resetSettings() {
+            localStorage.removeItem('bgColor');
+            localStorage.removeItem('textColor');
+            localStorage.removeItem('noteBgColor');
+            localStorage.removeItem('backgroundImage');
+            localStorage.removeItem('imageOpacity'); // Удаление прозрачности
+            localStorage.removeItem('calculatorEnabled'); // Удаление состояния калькулятора
+            
+            // Сброс значений по умолчанию
+            document.body.style.backgroundColor = "#000000"; // Исходный цвет фона
+            document.body.style.color = "#ffffff"; // Исходный цвет текста
+            document.querySelectorAll('.bottom-buttons button').forEach(btn => {
+                btn.style.color = '#ffffff'; // Исходный цвет текста кнопок
+            });
+            document.body.style.backgroundImage = 'none'; // Убираем фон
+            document.body.style.opacity = 1; // Прозрачность по умолчанию
+            document.getElementById('bgColor').value = "#000000"; // Сброс значения в input
+            document.getElementById('textColor').value = "#ffffff"; // Сброс значения в input
+            document.getElementById('noteBgColor').value = "#000000"; // Сброс значения в input
+            document.getElementById('backgroundImage').value = ''; // Сброс значения для выбора файла
+            document.getElementById('imageOpacity').value = 100; // Сброс значения прозрачности
+            document.getElementById('calculator-toggle').checked = false; // Сброс состояния переключателя
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById("confirmation-modal");
+            const settingsModal = document.getElementById("settings-modal");
+            if (event.target === modal) {
+                closeModal();
+            } else if (event.target === settingsModal) {
+                closeSettings();
+            }
+        }
+
+        function deleteSelectedNotes() {
+            notes = notes.filter(note => !note.selected);
+            localStorage.setItem('notes', JSON.stringify(notes)); 
+            displayNotes();
+            closeModal();
+        }
+    </script>
+</body>
+
+</html>
